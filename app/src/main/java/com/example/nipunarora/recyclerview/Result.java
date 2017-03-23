@@ -4,13 +4,13 @@ package com.example.nipunarora.recyclerview;
  * Created by nipunarora on 23/03/17.
  */
 
-public class Movie {
+public class Result {
     private String title;
-    private String genre;
 
-    public Movie(String title,String genre) {
+
+    public Result(String title) {
         this.title = title;
-        this.genre=genre;
+
     }
 
     public String getTitle() {
@@ -21,11 +21,5 @@ public class Movie {
         this.title = title;
     }
 
-    public String getGenre() {
-        return genre;
-    }
 
-    public void setGenre(String genre) {
-        this.genre = genre;
-    }
 }

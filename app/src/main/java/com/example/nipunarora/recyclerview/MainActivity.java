@@ -1,6 +1,7 @@
 package com.example.nipunarora.recyclerview;
 
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -8,6 +9,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -15,9 +17,20 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 
@@ -25,12 +38,14 @@ import static com.example.nipunarora.recyclerview.R.id.et_country;
 
 public class MainActivity extends AppCompatActivity {
     private RecyclerView movierecycler;
-    private ArrayList<Movie> movielist;
+    private ArrayList<Result> resultlist;
     private RecyclerViewAdapter recycleradapter;
     private AlertDialog.Builder addmovie;
     FloatingActionButton fab;
     View view;
     EditText movieadd;
+    private RequestQueue mrequestQueue;
+    private SwipeRefreshLayout pull_to_refresh;
     private Paint p = new Paint();// holds the information on how to draw an image can be thought of as a smart brush which knows what colour it has
 
     @Override
@@ -42,26 +57,37 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 removeView();
-                addmovie.setTitle("Add Movie");
+                addmovie.setTitle("Add Result");
                 movieadd.setText("");
                 addmovie.show();
 
             }
         });
-        movierecycler=(RecyclerView)findViewById(R.id.moviere);
-        movielist=new ArrayList<Movie>();
-        movielist.add(new Movie("Iron Man","Action"));
-        movielist.add(new Movie("Harry Potter and Goblet of Fire","Adventure"));
-        movielist.add(new Movie("Deep Sea","Adventure"));
-        movielist.add(new Movie("Kingsman Service","Action"));
+        pull_to_refresh=(SwipeRefreshLayout)findViewById(R.id.swipeContainer);
+        pull_to_refresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                pullToRefresh(recycleradapter.getItemCount());
+            }
+        });
+        pull_to_refresh.setColorSchemeResources(android.R.color.holo_blue_bright,
+                android.R.color.holo_green_light,
+                android.R.color.holo_orange_light,
+                android.R.color.holo_red_light);
 
-        recycleradapter=new RecyclerViewAdapter(movielist);
+        mrequestQueue=VolleySingleton.getInstance(getApplicationContext()).getRequestQueue();
+        movierecycler=(RecyclerView)findViewById(R.id.moviere);
+        resultlist=new ArrayList<Result>();
+        resultlist.add(new Result("B.Sc Mathematics"));
+
+
+        recycleradapter=new RecyclerViewAdapter(resultlist);
         RecyclerView.LayoutManager l=new LinearLayoutManager(getApplicationContext());
         movierecycler.setLayoutManager(l);
         movierecycler.setAdapter(recycleradapter);
         movierecycler.setItemAnimator(new DefaultItemAnimator());
         addMovieDialog();
-        initSwipe();
+        //initSwipe();
 
 
     }
@@ -82,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
              @Override
              public void onClick(DialogInterface dialog, int which) {
                   movieadd=(EditText)view.findViewById(et_country);
-                 recycleradapter.addMovie(new Movie(movieadd.getText().toString(),"Action"));
+                 recycleradapter.addMovie(new Result(movieadd.getText().toString()));
                  dialog.dismiss();
 
 
@@ -92,10 +118,64 @@ public class MainActivity extends AppCompatActivity {
 
 
      }
+     ///********************************** Adding Pull To Refresh Feature *************/
+    public void pullToRefresh(int currentSize)
+    {
+
+        int startindex=currentSize;
+        int endIndex=currentSize+7;
+        String url=String.format("http://139.59.40.238:88/api/results/1?from=0&to=%d",endIndex);
+        Log.d("Url Formed",url);
+        StringRequest getResults = new StringRequest(Request.Method.GET,url,
+                new Response.Listener<String>()
+                {
+                    @Override
+                    public void onResponse(String response) {
+                        // response
+                        Log.d("Response", response);
+                        /***************** JSON PARSING OF THE RESPONSE*********************/
+                        try{
+                            JSONObject res=new JSONObject(response);
+                            int Json_length=res.length();
+                            JSONArray key_array=res.names();
+                            for (int i=0;i<Json_length;++i)
+                            {
+                                JSONObject temp=res.getJSONObject(key_array.getString(i));
+                                resultlist.add(new Result(temp.getString("title")));
+                            }
+
+
+                        }
+                        catch (Exception e)
+                        {
+                            Log.d("JSON Parse Error",e.toString());
+                        }
+                        /***************** END OF JSON PARSING *******************************/
+                        /******************* notify that the dataset has changed *************/
+                        recycleradapter.notifyDataSetChanged();
+                        pull_to_refresh.setRefreshing(false);
+
+                    }
+                },
+                //******************** Enable the starting of app even in the case when internet is no available with default banner images **********/
+                new Response.ErrorListener()
+                {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.d("error", error.toString());
+                    }
+                }
+        );
+        getResults.setRetryPolicy(new DefaultRetryPolicy(5000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        mrequestQueue.add(getResults);
+        
+    }
 
      ///******************************** Adding the SwipeReveal Feature *********************//
      private void initSwipe(){
-         ItemTouchHelper.SimpleCallback simpleItemTouchCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+         ItemTouchHelper.SimpleCallback simpleItemTouchCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT ) {
 
              @Override
              public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
@@ -107,18 +187,19 @@ public class MainActivity extends AppCompatActivity {
                  int position = viewHolder.getAdapterPosition();
 
 
-                 if (direction == ItemTouchHelper.LEFT){
+                 if (direction == ItemTouchHelper.RIGHT){
                     /*************  Action for swipe left *********/
-                     ;
+                     Log.d("Action","right Swiped");
+
                  } else {
-                     /***************** action for swipe right ***************/
-                     ;
+                     /**************** action for swipe right **************/
+                     Log.d("Action","Right random");
                  }
              }
 
              @Override
              public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-
+                 float translationX=0;
                  Bitmap icon;
                  if(actionState == ItemTouchHelper.ACTION_STATE_SWIPE){
 
@@ -126,27 +207,35 @@ public class MainActivity extends AppCompatActivity {
                      float height = (float) itemView.getBottom() - (float) itemView.getTop();
                      float width = height / 3;
 
-                     if(dX > 0){
+
+                     if(dX < 0){
                          p.setColor(Color.parseColor("#388E3C"));
-                         RectF background = new RectF((float) itemView.getLeft(), (float) itemView.getTop(), dX,(float) itemView.getBottom());
+                         RectF background = new RectF(Math.max((float) itemView.getRight() + dX,(3*itemView.getWidth())/4), (float) itemView.getTop(),(float) itemView.getRight(), (float) itemView.getBottom());
                          c.drawRect(background,p);
+                         //translationX=Math.max((float) itemView.getRight() + dX,itemView.getWidth()/4);
                          icon = BitmapFactory.decodeResource(getResources(), R.drawable.save);
-                         RectF icon_dest = new RectF((float) itemView.getLeft() + width ,(float) itemView.getTop() + width,(float) itemView.getLeft()+ 2*width,(float)itemView.getBottom() - width);
-                         c.drawBitmap(icon,null,icon_dest,p);
-                     } else {
-                         p.setColor(Color.parseColor("#D32F2F"));
-                         RectF background = new RectF((float) itemView.getRight() + dX, (float) itemView.getTop(),(float) itemView.getRight(), (float) itemView.getBottom());
-                         c.drawRect(background,p);
-                         icon = BitmapFactory.decodeResource(getResources(), R.drawable.edit);
                          RectF icon_dest = new RectF((float) itemView.getRight() - 2*width ,(float) itemView.getTop() + width,(float) itemView.getRight() - width,(float)itemView.getBottom() - width);
                          c.drawBitmap(icon,null,icon_dest,p);
+
+                     }
+                     else {
+
                      }
                  }
-                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+                 super.onChildDraw(c, recyclerView, viewHolder,dX,dY, actionState, isCurrentlyActive);
              }
+             @Override
+             public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+                 int dragFlags = 0;
+                 int swipeFlags = ItemTouchHelper.START;
+                 return makeMovementFlags(dragFlags, swipeFlags);
+             }
+
          };
          ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleItemTouchCallback);
          itemTouchHelper.attachToRecyclerView(movierecycler);
+
      }
+
 
 }

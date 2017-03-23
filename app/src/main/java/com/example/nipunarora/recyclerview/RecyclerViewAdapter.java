@@ -7,14 +7,13 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by nipunarora on 23/03/17.
  */
 
 public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.MovieViewHolder> {
-    private ArrayList<Movie> movieslist;
+    private ArrayList<Result> movieslist;
 
     //************************************** View Holder *************************//
 
@@ -31,7 +30,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     //********************** Constructor ********************************//
 
 
-    public RecyclerViewAdapter(ArrayList<Movie> movieslist) {
+    public RecyclerViewAdapter(ArrayList<Result> movieslist) {
         this.movieslist = movieslist;
     }
 
@@ -47,9 +46,9 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
     @Override
     public void onBindViewHolder(MovieViewHolder holder, int position) {
-        Movie m=movieslist.get(position);
+        Result m=movieslist.get(position);
         holder.movie_name.setText(m.getTitle());
-        holder.genre.setText(m.getGenre());
+
     }
 
     @Override
@@ -58,9 +57,20 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     }
 
     //**************************** I/O Methods *************************//
-    public void addMovie(Movie m)
+    public void addMovie(Result m)
     {
         movieslist.add(m);
         notifyItemInserted(movieslist.size());
+    }
+    public void clear()
+    {
+        movieslist.clear();
+        notifyDataSetChanged();
+    }
+    public void refreshAdd(ArrayList<Result> d)
+    {
+        movieslist.addAll(d);
+        notifyDataSetChanged();
+
     }
 }
