@@ -126,9 +126,11 @@ public class MainActivity extends AppCompatActivity {
         int endIndex=currentSize+7;
         String url=String.format("http://139.59.40.238:88/api/results/1?from=0&to=%d",endIndex);
         Log.d("Url Formed",url);
+        final ArrayList<Result> templist=new ArrayList<Result>();
         StringRequest getResults = new StringRequest(Request.Method.GET,url,
                 new Response.Listener<String>()
                 {
+
                     @Override
                     public void onResponse(String response) {
                         // response
@@ -141,7 +143,8 @@ public class MainActivity extends AppCompatActivity {
                             for (int i=0;i<Json_length;++i)
                             {
                                 JSONObject temp=res.getJSONObject(key_array.getString(i));
-                                resultlist.add(new Result(temp.getString("title")));
+                                Log.d("json object",temp.getString("title"));
+                                templist.add(new Result(temp.getString("title")));
                             }
 
 
@@ -152,7 +155,9 @@ public class MainActivity extends AppCompatActivity {
                         }
                         /***************** END OF JSON PARSING *******************************/
                         /******************* notify that the dataset has changed *************/
-                        recycleradapter.notifyDataSetChanged();
+                        recycleradapter.clear();
+                        Log.d("templist size",String.format("%d",templist.size()));
+                        recycleradapter.refreshAdd(templist);
                         pull_to_refresh.setRefreshing(false);
 
                     }
