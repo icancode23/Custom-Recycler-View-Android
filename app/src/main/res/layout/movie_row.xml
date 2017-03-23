@@ -10,14 +10,14 @@
         android:textSize="16sp"
         android:id="@+id/movieName"
         android:textColor="@color/colorPrimary"/>
-    <android.support.v7.widget.AppCompatTextView
+    <!--<android.support.v7.widget.AppCompatTextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Action"
         android:textSize="15sp"
         android:textStyle="italic"
         android:id="@+id/genre"
-        android:textColor="@color/colorPrimaryDark"/>
+        android:textColor="@color/colorPrimaryDark"/>-->
 
 
 </LinearLayout>

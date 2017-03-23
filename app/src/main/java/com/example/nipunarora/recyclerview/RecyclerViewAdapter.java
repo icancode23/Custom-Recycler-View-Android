@@ -23,7 +23,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         public MovieViewHolder(View itemView) {
             super(itemView);
             movie_name=(TextView)itemView.findViewById(R.id.movieName);
-            genre=(TextView)itemView.findViewById(R.id.genre);
+
 
         }
     }

@@ -21,6 +21,8 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
@@ -33,6 +35,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
 
 import static com.example.nipunarora.recyclerview.R.id.et_country;
 
@@ -47,12 +51,16 @@ public class MainActivity extends AppCompatActivity {
     private RequestQueue mrequestQueue;
     private SwipeRefreshLayout pull_to_refresh;
     private Paint p = new Paint();// holds the information on how to draw an image can be thought of as a smart brush which knows what colour it has
-
+    public LinearLayoutManager la;
+    private ProgressBar progressBar;
+    Handler mHandler;
+    Runnable loadfrombottom;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         fab=(FloatingActionButton)findViewById(R.id.fab);
+        progressBar=(ProgressBar)findViewById(R.id.progressBar);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -63,17 +71,28 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        pull_to_refresh=(SwipeRefreshLayout)findViewById(R.id.swipeContainer);
-        pull_to_refresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+
+        //******************* WE HAVE COMMENTED OUT THE SWIPE REFRESH LAYOUT LISTENER SINCE WE NEEDED ONLY THE Pull up to Refresh ******/
+        //pull_to_refresh=(SwipeRefreshLayout)findViewById(R.id.swipeContainer);
+        /*pull_to_refresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
                 pullToRefresh(recycleradapter.getItemCount());
             }
-        });
-        pull_to_refresh.setColorSchemeResources(android.R.color.holo_blue_bright,
+        });*/
+        /* pull_to_refresh.setColorSchemeResources(android.R.color.holo_blue_bright,
                 android.R.color.holo_green_light,
                 android.R.color.holo_orange_light,
-                android.R.color.holo_red_light);
+                android.R.color.holo_red_light);*/
+
+        //************ UNCOMMENT THE ABOVE LINES TO ACHIEVE THE FEATURE OF SWIPE DOWN TO LOAD **********//
+
+
+        final int[] pastVisiblesItems = new int[1];
+        final int[] visibleItemCount = new int[1];
+        final int[] totalItemCount = new int[1];
+
+
 
         mrequestQueue=VolleySingleton.getInstance(getApplicationContext()).getRequestQueue();
         movierecycler=(RecyclerView)findViewById(R.id.moviere);
@@ -82,13 +101,37 @@ public class MainActivity extends AppCompatActivity {
 
 
         recycleradapter=new RecyclerViewAdapter(resultlist);
-        RecyclerView.LayoutManager l=new LinearLayoutManager(getApplicationContext());
-        movierecycler.setLayoutManager(l);
+         la =new LinearLayoutManager(getApplicationContext());
+        movierecycler.setLayoutManager(la);
         movierecycler.setAdapter(recycleradapter);
         movierecycler.setItemAnimator(new DefaultItemAnimator());
         addMovieDialog();
-        //initSwipe();
+        movierecycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView,
+                                   int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                visibleItemCount[0] = la.getChildCount();
+                totalItemCount[0] = la.getItemCount();
+                pastVisiblesItems[0] = la.findFirstVisibleItemPosition();
 
+                if ((visibleItemCount[0] + pastVisiblesItems[0]) >= totalItemCount[0]) {
+
+                    if(la.findLastCompletelyVisibleItemPosition()==recycleradapter.getItemCount()-1 /*&& recycleradapter.getItemCount()>5 You have your ofset values here*/){
+                        //************************* Reached the End of recycler View ***********/
+                        Log.d("Status","reached the Bottom");
+                        //************** Set The visibility of progress bar as true *****/
+                        progressBar.setVisibility(View.VISIBLE);
+                        //******************** Call The function to load more data *********//
+                        pullToRefresh(recycleradapter.getItemCount());
+
+
+                    }
+
+                }
+            }
+        });
+        //initSwipe();
 
     }
     // ********************************** The function remove view is called to remove the previous dialog box from the parent since we want to bring up a newer version of it **********/
@@ -140,10 +183,10 @@ public class MainActivity extends AppCompatActivity {
                             JSONObject res=new JSONObject(response);
                             int Json_length=res.length();
                             JSONArray key_array=res.names();
-                            for (int i=0;i<Json_length;++i)
+                            for (int i=(Json_length-1);i>=0;--i)
                             {
                                 JSONObject temp=res.getJSONObject(key_array.getString(i));
-                                Log.d("json object",temp.getString("title"));
+                                /*Log.d("json object",temp.getString("title"));*/
                                 templist.add(new Result(temp.getString("title")));
                             }
 
@@ -158,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
                         recycleradapter.clear();
                         Log.d("templist size",String.format("%d",templist.size()));
                         recycleradapter.refreshAdd(templist);
-                        pull_to_refresh.setRefreshing(false);
+                        progressBar.setVisibility(View.GONE);
 
                     }
                 },
@@ -168,6 +211,9 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onErrorResponse(VolleyError error) {
                         Log.d("error", error.toString());
+                        progressBar.setVisibility(View.GONE);
+                        Toast.makeText(getApplicationContext(),(String)error.toString(),Toast.LENGTH_LONG).show();
+
                     }
                 }
         );

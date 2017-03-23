@@ -13,18 +13,28 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="5dp"
         android:src="@drawable/add"/>
-    <android.support.v4.widget.SwipeRefreshLayout
+    <!--<android.support.v4.widget.SwipeRefreshLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/swipeContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
+        Uncomment this and the code in MainActivity to get pull down to refresh-->
 
     <android.support.v7.widget.RecyclerView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        android:id="@+id/moviere"/>
-    </android.support.v4.widget.SwipeRefreshLayout>
+        android:id="@+id/moviere"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+    <!--</android.support.v4.widget.SwipeRefreshLayout>-->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_gravity="bottom"
+        android:background="#ffffff"
+        android:progressDrawable="@drawable/circular_progress_bar"
+        android:visibility="gone"/>
 </android.support.design.widget.CoordinatorLayout>
