@@ -111,9 +111,9 @@ public class MainActivity extends AppCompatActivity {
             public void onScrolled(RecyclerView recyclerView,
                                    int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
-                visibleItemCount[0] = la.getChildCount();
-                totalItemCount[0] = la.getItemCount();
-                pastVisiblesItems[0] = la.findFirstVisibleItemPosition();
+                visibleItemCount[0] = la.getChildCount();//Gives the number of children currently on the screen
+                totalItemCount[0] = la.getItemCount();//gives total items of recycler view
+                pastVisiblesItems[0] = la.findFirstVisibleItemPosition();//gives the index of item at the top of the screen
 
                 if ((visibleItemCount[0] + pastVisiblesItems[0]) >= totalItemCount[0]) {
 
